@@ -1,12 +1,67 @@
-<!DOCTYPE html>
-<html lang="ar">
+# إنشاء نسخة بديلة بـ HTML + JavaScript تعمل مباشرة على GitHub Pages
+
+simple_html_path = Path("/mnt/data/simple_portal")
+simple_html_path.mkdir(parents=True, exist_ok=True)
+
+# تحضير البيانات
+trainee_map = {
+    str(row['الرقم التدريبي']): str(row['إسم المتدرب الرباعي']).strip().replace(" ", "_") + ".pdf"
+    for _, row in df_students.iterrows()
+}
+
+# بناء ملف index.html
+html_code = f"""<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>بوابة ملفات التدريب</title>
-  <script type="module" src="/src/TrainingFilePortal.jsx"></script>
+  <style>
+    body {{ font-family: Tahoma, sans-serif; text-align: center; padding: 50px; background: #f0f0f0; }}
+    input {{ padding: 10px; font-size: 1rem; width: 300px; }}
+    button {{ padding: 10px 20px; font-size: 1rem; margin-top: 10px; }}
+    .link {{ margin-top: 20px; font-size: 1.1rem; color: green; }}
+    .error {{ color: red; margin-top: 20px; }}
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <h1>البحث عن ملف التدريب</h1>
+  <input type="text" id="traineeId" placeholder="أدخل الرقم التدريبي" />
+  <br/>
+  <button onclick="searchFile()">عرض الملف</button>
+  <div id="result" class="link"></div>
+  <div id="error" class="error"></div>
+
+  <script>
+    const files = {trainee_map};
+
+    function searchFile() {{
+      const id = document.getElementById('traineeId').value.trim();
+      const resultDiv = document.getElementById('result');
+      const errorDiv = document.getElementById('error');
+      resultDiv.innerHTML = '';
+      errorDiv.innerHTML = '';
+
+      if (files[id]) {{
+        const link = `/training-files/files/${{files[id]}}`;
+        resultDiv.innerHTML = `<a href='${{link}}' download>تحميل الملف الخاص بك</a>`;
+      }} else {{
+        errorDiv.innerText = 'الرقم التدريبي غير صحيح أو لا يوجد ملف مطابق.';
+      }}
+    }}
+  </script>
 </body>
 </html>
+"""
+
+# حفظ ملف index.html
+index_file_path = simple_html_path / "index.html"
+index_file_path.write_text(html_code, encoding="utf-8")
+
+# ضغط النسخة الجاهزة
+zip_simple_path = "/mnt/data/simple_training_file_portal.zip"
+with zipfile.ZipFile(zip_simple_path, 'w') as zipf:
+    for file_path in simple_html_path.rglob('*'):
+        zipf.write(file_path, file_path.relative_to(simple_html_path))
+
+zip_simple_path
